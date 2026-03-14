@@ -1,6 +1,6 @@
 # NexusUI — Roblox Luau UI Library
 
-> **Current Version:** `v3.4`
+> **Current Version:** `v1.4`
 > A full-featured, production-ready UI Library for Roblox scripts.
 > Clean dark purple theme · Smooth animations · Mobile support · Config Save/Load
 
@@ -29,34 +29,34 @@ Main:AddToggle({ Name = "God Mode", Callback = function(v) print(v) end })
 
 ## Version History
 
-### v3.4 — *Current*
+### v1.5 — *Current*
 - **UICorner** on the main window frame properly rounds all 4 corners
 - **`AddMultiDropdown`** — multi-select element with checkboxes, Select All / Clear buttons, and count badge
 - **`AddParagraph`** — styled title + body text block with transparent card and accent strip
 - **`AddLabel`** — transparent, simple text display (replaces old plain label)
 - **Config Save/Load System** — `Win:SaveConfig(name)` and `Win:LoadConfig(name)` via executor `writefile`/`readfile` with JSON serialisation; falls back to `print` if no executor access
 
-### v3.2
+### v1.4
 - Shadow system fully **removed** — replaced with a clean `UIStroke` accent border
 - **TitleBar redesigned** — 60 px tall, richer 3-stop gradient, larger icon pill with inner shine, version badge chip, separator line
 - **Body bottom** now has a decorative accent footer bar making the edge look intentional
 - **`AddCredit`** — transparent-background credit element with `GothamBold` styled text and decorative divider lines
 
-### v3.1 — Bug Fix Release
+## V1.3 — Bug Fix Release
 - **Emoji/Unicode garble fixed** — All emoji removed; icons are now safe ASCII strings
 - **Slider purple square fixed** — Removed glow `Frame` that bled outside knob bounds; replaced with animated `UIStroke` ring
 - **Toggle glow square fixed** — Same fix applied to toggle thumb
 - **Dropdown clipping fixed** — Dropdown list now parents to a dedicated `dropOverlay` frame above the `ScrollingFrame`, so it is never clipped
 - **Proper scroll** — Each tab page is a proper `ScrollingFrame` with auto-canvas
 
-### v3.0
+### v1.2
 - Drop shadow system (layered frames + `RenderStepped` sync)
 - Per-tab `ScrollingFrame` pages
 - Overlay system for dropdown positioning
 - `AddColorPicker`, `AddProgressBar`, `AddKeybind`
 - `NexusUI:Notify()` notification system
 
-### v2.0
+### v1.1
 - iOS-style `AddToggle` with spring animation
 - `AddSlider` with draggable knob
 - `AddDropdown` with animated list
