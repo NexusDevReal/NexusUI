@@ -79,7 +79,7 @@ Creates and shows the main window.
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `Title` | `string` | `"NexusUI"` | Window title text |
-| `Subtitle` | `string` | `"v3.4"` | Version badge text |
+| `Subtitle` | `string` | `"v1.5"` | Version badge text |
 | `Icon` | `string` | `"N"` | Short ASCII icon shown in the pill |
 | `Size` | `UDim2` | `(0,370,0,500)` | Window size |
 | `Position` | `UDim2` | Center screen | Initial position |
@@ -192,7 +192,7 @@ Main:AddSeparator()
 
 ### `Tab:AddLabel(options)`
 
-> **NEW in v3.4**
+> **NEW in v1.5**
 
 Simple transparent text display — no card background.
 
@@ -220,7 +220,7 @@ lbl:SetText("Status: Idle")
 
 ### `Tab:AddParagraph(options)`
 
-> **NEW in v3.4**
+> **NEW in v1.5**
 
 A title + multi-line body text block. Semi-transparent card with a left accent strip.
 
@@ -354,7 +354,7 @@ local drop = Settings:AddDropdown({
 
 ### `Tab:AddMultiDropdown(options)`
 
-> **NEW in v3.4**
+> **NEW in v1.5**
 
 Multi-select dropdown with checkbox rows, count badge pill, and Select All / Clear actions.
 
