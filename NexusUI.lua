@@ -1,21 +1,18 @@
 --[[
   ================================================
-    NexusUI  v1.2  |  Roblox Luau UI Library
+    NexusUI  v1.3  |  Roblox Luau UI Library
   ================================================
-  FIXES in this version:
-    [1] ALL emoji/multi-byte Unicode REMOVED
-        (Roblox fonts render them as garbled text)
-        Icons now use safe ASCII-only symbols.
-    [2] Slider purple-square BUG FIXED
-        The glow Frame that bled outside the knob
-        bounds has been removed entirely.
-    [3] Toggle glow-square BUG FIXED
-        Same fix — removed bleed-outside Frame.
-    [4] Dropdown list now parents to a top-level
-        OVERLAY frame so it is never clipped by
-        the ScrollingFrame content area.
-    [5] Content area is a proper ScrollingFrame
-        with per-tab independent scrolling.
+  Changes in v1.3:
+    [1] SHADOW removed — replaced with a clean
+        accent UIStroke border + top glow line.
+    [2] TITLEBAR improved — 60px, richer gradient,
+        larger icon pill with shine, version badge
+        chip, and a separator line at the bottom.
+    [3] BODY BOTTOM fixed — decorative footer bar
+        makes the bottom edge look intentional.
+    [4] AddCredit() — new transparent-bg element
+        with GothamBold styled text, decorative
+        divider lines, supports 1 or 2 lines.
   ================================================
 --]]
 
@@ -25,7 +22,6 @@
 local Players          = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService     = game:GetService("TweenService")
-local RunService       = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -335,7 +331,7 @@ function NexusUI:CreateWindow(opt)
 	-- FIX: default icon is now a safe ASCII string "N"
 	-- Users must pass only short ASCII strings for Icon, not emoji
 	local wTitle  = opt.Title    or "NexusUI"
-	local wSub    = opt.Subtitle or "v1.2"
+	local wSub    = opt.Subtitle or "v1.3"
 	local wIcon   = opt.Icon     or "N"    -- SAFE: ASCII only
 	local wSize   = opt.Size     or UDim2.new(0, 370, 0, 490)
 	local wPos    = opt.Position or UDim2.new(0.5,-185,0.5,-245)
@@ -352,73 +348,79 @@ function NexusUI:CreateWindow(opt)
 
 	_InitNotifHolder(sg)
 
-	-- ── Drop shadow (layered frames, no bleed, no glow frames) ──
-	local shadowHolder = MkFrame(sg,
-		UDim2.new(0, wSize.X.Offset + 40, 0, wSize.Y.Offset + 40),
-		UDim2.new(wPos.X.Scale, wPos.X.Offset - 20, wPos.Y.Scale, wPos.Y.Offset - 20),
-		T.Black, false, 1)
-	shadowHolder.BackgroundTransparency = 1
-
-	local shadowLayers = {}
-	for i = 1, 3 do
-		local sh = MkFrame(shadowHolder,
-			UDim2.new(1, i * 8, 1, i * 8),
-			UDim2.new(0, -(i * 4), 0, -(i * 4)),
-			Color3.fromRGB(4, 2, 12))
-		sh.BackgroundTransparency = 0.56 + i * 0.11
-		Corner(sh, 18 + i * 3)
-		table.insert(shadowLayers, sh)
-	end
-
-	-- ── Main window ──────────────────────────────────────────
+	-- ── Main window  (no shadow — clean UIStroke border instead) ──
 	local win = MkFrame(sg, wSize, wPos, T.BG, false, 2)
 	Corner(win, 16)
-	Stroke(win, T.Border, 1)
 
-	-- sync shadow every frame
-	local syncConn = RunService.RenderStepped:Connect(function()
-		shadowHolder.Position = UDim2.new(
-			win.Position.X.Scale, win.Position.X.Offset - 20,
-			win.Position.Y.Scale, win.Position.Y.Offset - 20)
-	end)
+	-- Accent border stroke with a colour that sits between
+	-- the accent purple and the dark background
+	local winStroke = Stroke(win, Color3.fromRGB(90, 58, 172), 1.5)
+	-- Give it a subtle gradient so the top edge is brighter (accent)
+	-- and the bottom is darker — achieved by fading Transparency
+	-- on a second inner glow frame instead of wrestling UIGradient
+	-- on UIStroke (which doesn't exist in Roblox).
+	-- Solution: thin inner highlight frame at the top of win.
+	local topGlow = MkFrame(win, UDim2.new(1,-4,0,1), UDim2.new(0,2,0,0),
+		Color3.fromRGB(140, 90, 255))
+	topGlow.BackgroundTransparency = 0.4
+	topGlow.ZIndex = 10
 
-	-- ── Title bar ────────────────────────────────────────────
-	local titleBar = MkFrame(win, UDim2.new(1, 0, 0, 52), nil, T.Surface)
+	-- ── Title bar (IMPROVED: 60px, separator, richer layout) ──
+	local titleBar = MkFrame(win, UDim2.new(1, 0, 0, 60), nil, T.Surface)
 	Corner(titleBar, 16)
-	-- fix: fill bottom sharp corners created by the top rounding
+	-- Fill the bottom sharp corners that the top-only rounding creates
 	MkFrame(titleBar, UDim2.new(1, 0, 0, 16), UDim2.new(0, 0, 1, -16), T.Surface)
 
-	-- subtle gradient on titlebar
+	-- Richer gradient: deep purple → surface
 	local tbG = Instance.new("UIGradient")
-	tbG.Color    = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(38, 28, 72)),
+	tbG.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(46, 32, 86)),
+		ColorSequenceKeypoint.new(0.6, Color3.fromRGB(30, 22, 58)),
 		ColorSequenceKeypoint.new(1, T.Surface),
 	})
 	tbG.Rotation = 90
 	tbG.Parent   = titleBar
 
+	-- Thin separator line at the very bottom of the titlebar
+	local tbSep = MkFrame(titleBar, UDim2.new(1, -24, 0, 1),
+		UDim2.new(0, 12, 1, -1), Color3.fromRGB(70, 50, 110))
+	tbSep.ZIndex = 5
+	tbSep.BackgroundTransparency = 0.4
+
 	MakeDraggable(win, titleBar)
 
-	-- Icon pill  (FIX: no emoji, just the ASCII char user passes)
-	local iconPill = MkFrame(titleBar, UDim2.new(0, 36, 0, 36), UDim2.new(0, 12, 0, 8), T.AccentLo)
-	Corner(iconPill, 10)
-	Stroke(iconPill, T.Accent, 1, 0.4)
-	MkLabel(iconPill, wIcon, 18, T.White, Enum.Font.GothamBold,
+	-- Icon pill — larger, accent ring
+	local iconPill = MkFrame(titleBar, UDim2.new(0, 40, 0, 40),
+		UDim2.new(0, 12, 0.5, -20), T.AccentLo)
+	Corner(iconPill, 12)
+	Stroke(iconPill, T.AccentHi, 1, 0.3)
+	-- Inner shine on the pill
+	local pillShine = MkFrame(iconPill, UDim2.new(1,-4,0,12),
+		UDim2.new(0,2,0,2), T.White)
+	pillShine.BackgroundTransparency = 0.88
+	Corner(pillShine, 6)
+	MkLabel(iconPill, wIcon, 20, T.White, Enum.Font.GothamBold,
+		Enum.TextXAlignment.Center, Enum.TextYAlignment.Center).ZIndex = 4
+
+	-- Title text (larger, brighter)
+	local titleL = MkLabel(titleBar, wTitle, 15, T.TxtMain, Enum.Font.GothamBold)
+	titleL.Size     = UDim2.new(1, -152, 0, 22)
+	titleL.Position = UDim2.new(0, 62, 0, 10)
+
+	-- Version badge chip (replaces plain subtitle)
+	local verChip = MkFrame(titleBar, UDim2.new(0, 0, 0, 18),
+		UDim2.new(0, 62, 0, 34), T.AccentLo)
+	verChip.AutomaticSize = Enum.AutomaticSize.X
+	Corner(verChip, 6)
+	Stroke(verChip, T.Accent, 1, 0.5)
+	local verLbl = MkLabel(verChip, wSub, 10, T.AccentHi, Enum.Font.GothamBold,
 		Enum.TextXAlignment.Center, Enum.TextYAlignment.Center)
+	verLbl.Size = UDim2.new(1, 0, 1, 0)
+	Pad(verChip, 0, 0, 6, 6)
 
-	-- Title + subtitle
-	local titleL = MkLabel(titleBar, wTitle, 14, T.TxtMain, Enum.Font.GothamBold)
-	titleL.Size     = UDim2.new(1, -148, 0, 22)
-	titleL.Position = UDim2.new(0, 56, 0, 7)
-
-	local subL = MkLabel(titleBar, wSub, 11, T.TxtMute, Enum.Font.Gotham)
-	subL.Size     = UDim2.new(1, -148, 0, 16)
-	subL.Position = UDim2.new(0, 56, 0, 28)
-
-	-- ── Close button ─────────────────────────────────────────
-	local closeBox = MkFrame(titleBar, UDim2.new(0, 28, 0, 28), UDim2.new(1, -38, 0, 12), T.Red)
+	-- ── Close button (repositioned for 60px bar) ─────────────
+	local closeBox = MkFrame(titleBar, UDim2.new(0, 28, 0, 28), UDim2.new(1, -38, 0.5, -14), T.Red)
 	Corner(closeBox, 8)
-	-- FIX: ASCII "x" not a Unicode cross
 	MkLabel(closeBox, "x", 13, T.White, Enum.Font.GothamBold,
 		Enum.TextXAlignment.Center, Enum.TextYAlignment.Center)
 	local closeBB = MkButton(closeBox, "", 0, T.Black, T.White)
@@ -427,16 +429,13 @@ function NexusUI:CreateWindow(opt)
 	closeBB.MouseLeave:Connect(function() FT(closeBox,{BackgroundColor3=T.Red},0.12) end)
 	closeBB.MouseButton1Click:Connect(function()
 		FT(win, {Size=UDim2.new(0,wSize.X.Offset,0,0), BackgroundTransparency=1}, 0.24)
-		for _, sh in shadowLayers do FT(sh,{BackgroundTransparency=1},0.2) end
 		task.wait(0.26)
-		syncConn:Disconnect()
 		sg:Destroy()
 	end)
 
-	-- ── Minimize button ──────────────────────────────────────
-	local minBox = MkFrame(titleBar, UDim2.new(0, 28, 0, 28), UDim2.new(1, -70, 0, 12), T.SurfaceHi)
+	-- ── Minimize button (repositioned for 60px bar) ───────────
+	local minBox = MkFrame(titleBar, UDim2.new(0, 28, 0, 28), UDim2.new(1, -70, 0.5, -14), T.SurfaceHi)
 	Corner(minBox, 8); Stroke(minBox, T.Border, 1)
-	-- FIX: ASCII "-" not a Unicode em-dash
 	local minLbl = MkLabel(minBox, "-", 16, T.TxtSub, Enum.Font.GothamBold,
 		Enum.TextXAlignment.Center, Enum.TextYAlignment.Center)
 	local minBB = MkButton(minBox,"",0,T.Black,T.White)
@@ -444,30 +443,35 @@ function NexusUI:CreateWindow(opt)
 	minBB.MouseEnter:Connect(function() FT(minBox,{BackgroundColor3=T.SurfaceHi2},0.12) end)
 	minBB.MouseLeave:Connect(function() FT(minBox,{BackgroundColor3=T.SurfaceHi},0.12) end)
 
-	-- ── Body (clips content) ─────────────────────────────────
-	local body = MkFrame(win, UDim2.new(1,0,1,-52), UDim2.new(0,0,0,52), T.BG, true, 2)
+	-- ── Body  (FIX: starts at 60px to match new titlebar) ───────
+	local body = MkFrame(win, UDim2.new(1,0,1,-60), UDim2.new(0,0,0,60), T.BG, true, 2)
 	Corner(body, 16)
-	MkFrame(body, UDim2.new(1,0,0,16), nil, T.BG) -- top corner fill
+	-- Top corner fill (hides the rounded top corners of body since
+	-- titlebar already covers that area)
+	MkFrame(body, UDim2.new(1,0,0,16), nil, T.BG)
 
-	-- ── Minimize logic  (FIX: shadow hides properly) ─────────
+	-- Bottom decorative bar — makes the footer look intentional
+	local bottomBar = MkFrame(win, UDim2.new(1,0,0,6), UDim2.new(0,0,1,-6),
+		Color3.fromRGB(70, 46, 130))
+	bottomBar.BackgroundTransparency = 0.65
+	bottomBar.ZIndex = 3
+	Corner(bottomBar, 4)
+
+	-- ── Minimize logic  (no shadow refs) ─────────────────────
 	local minimized = false
 	minBB.MouseButton1Click:Connect(function()
 		minimized = not minimized
 		if minimized then
-			FT(win, {Size = UDim2.new(0, wSize.X.Offset, 0, 52)}, 0.28)
-			for _, sh in shadowLayers do FT(sh,{BackgroundTransparency=1},0.2) end
-			FT(shadowHolder, {Size=UDim2.new(0,wSize.X.Offset+40,0,92)}, 0.28)
+			FT(win, {Size = UDim2.new(0, wSize.X.Offset, 0, 60)}, 0.28)
 			minLbl.Text = "+"
 		else
 			FT(win, {Size = wSize}, 0.28)
-			for i, sh in shadowLayers do FT(sh,{BackgroundTransparency = 0.56+i*0.11},0.28) end
-			FT(shadowHolder, {Size=UDim2.new(0,wSize.X.Offset+40,0,wSize.Y.Offset+40)}, 0.28)
 			minLbl.Text = "-"
 		end
 	end)
 
 	-- ── Tab bar ───────────────────────────────────────────────
-	local tabBar = MkFrame(body, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,12), T.SurfaceHi, false, 3)
+	local tabBar = MkFrame(body, UDim2.new(1,-20,0,36), UDim2.new(0,10,0,14), T.SurfaceHi, false, 3)
 	Corner(tabBar, 11); Stroke(tabBar, T.Border, 1)
 	local tabLL = Instance.new("UIListLayout")
 	tabLL.FillDirection=Enum.FillDirection.Horizontal
@@ -477,11 +481,11 @@ function NexusUI:CreateWindow(opt)
 	tabLL.Parent=tabBar
 	Pad(tabBar, 3,3,4,4)
 
-	-- ── Content holder  (one ScrollingFrame per tab page) ────
-	local contentArea = MkFrame(body, UDim2.new(1,0,1,-64), UDim2.new(0,0,0,64), T.BG, false, 3)
+	-- ── Content holder (scrollable per tab) ──────────────────
+	local contentArea = MkFrame(body, UDim2.new(1,0,1,-68), UDim2.new(0,0,0,68), T.BG, false, 3)
 
-	-- !! OVERLAY for dropdowns — sits on TOP, not clipped !!
-	local dropOverlay = MkFrame(body, UDim2.new(1,0,1,-64), UDim2.new(0,0,0,64), T.Black, false, 50)
+	-- Overlay for dropdowns — above everything, unclipped
+	local dropOverlay = MkFrame(body, UDim2.new(1,0,1,-68), UDim2.new(0,0,0,68), T.Black, false, 50)
 	dropOverlay.BackgroundTransparency = 1
 
 	local tabs      = {}
@@ -1231,6 +1235,83 @@ function NexusUI:CreateWindow(opt)
 			end
 			function PB:Get() return tonumber(vl.Text:gsub("%%","")) end
 			return PB
+		end
+
+		-- =========================================================
+		--  CREDIT  (transparent bg, styled centred text)
+		--  Usage:  Tab:AddCredit("Credit By NexusDev")
+		--          Tab:AddCredit("Credit By NexusDev", "Version 1.0")
+		-- =========================================================
+		function API:AddCredit(line1, line2)
+			line1 = line1 or "Credit"
+			line2 = line2 or ""
+
+			-- Outer wrapper — fully transparent, no background at all
+			local wrap = MkFrame(page, UDim2.new(1,0,0, line2~="" and 72 or 54), nil, T.Black)
+			wrap.BackgroundTransparency = 1
+			wrap.ZIndex = 4
+
+			-- Thin decorative top line with a centre gap
+			local dL1 = MkFrame(wrap, UDim2.new(0.3,0,0,1), UDim2.new(0.05,0,0,0),
+				Color3.fromRGB(90,58,160))
+			dL1.BackgroundTransparency = 0.5; dL1.ZIndex = 4
+			local dL2 = MkFrame(wrap, UDim2.new(0.3,0,0,1), UDim2.new(0.65,0,0,0),
+				Color3.fromRGB(90,58,160))
+			dL2.BackgroundTransparency = 0.5; dL2.ZIndex = 4
+
+			-- Primary credit line — GothamBold, accent-tinted white
+			local l1 = Instance.new("TextLabel")
+			l1.Text               = line1
+			l1.TextSize           = 14
+			l1.Font               = Enum.Font.GothamBold
+			l1.TextColor3         = Color3.fromRGB(196, 170, 255)
+			l1.BackgroundTransparency = 1
+			l1.BorderSizePixel    = 0
+			l1.Size               = UDim2.new(1, 0, 0, 22)
+			l1.Position           = UDim2.new(0, 0, 0, 8)
+			l1.TextXAlignment     = Enum.TextXAlignment.Center
+			l1.TextYAlignment     = Enum.TextYAlignment.Center
+			l1.ZIndex             = 5
+			l1.Parent             = wrap
+
+			-- Optional second line — Gotham (lighter, smaller, muted)
+			if line2 ~= "" then
+				local l2 = Instance.new("TextLabel")
+				l2.Text               = line2
+				l2.TextSize           = 11
+				l2.Font               = Enum.Font.Gotham
+				l2.TextColor3         = Color3.fromRGB(110, 90, 150)
+				l2.BackgroundTransparency = 1
+				l2.BorderSizePixel    = 0
+				l2.Size               = UDim2.new(1, 0, 0, 18)
+				l2.Position           = UDim2.new(0, 0, 0, 34)
+				l2.TextXAlignment     = Enum.TextXAlignment.Center
+				l2.TextYAlignment     = Enum.TextYAlignment.Center
+				l2.ZIndex             = 5
+				l2.Parent             = wrap
+			end
+
+			-- Thin decorative bottom line
+			local dB1 = MkFrame(wrap, UDim2.new(0.3,0,0,1), UDim2.new(0.05,0,1,-1),
+				Color3.fromRGB(90,58,160))
+			dB1.BackgroundTransparency = 0.5; dB1.ZIndex = 4
+			local dB2 = MkFrame(wrap, UDim2.new(0.3,0,0,1), UDim2.new(0.65,0,1,-1),
+				Color3.fromRGB(90,58,160))
+			dB2.BackgroundTransparency = 0.5; dB2.ZIndex = 4
+
+			-- Small centre diamond separator between lines
+			local diamond = Instance.new("TextLabel")
+			diamond.Text               = "*"
+			diamond.TextSize           = 9
+			diamond.Font               = Enum.Font.GothamBold
+			diamond.TextColor3         = Color3.fromRGB(130, 90, 200)
+			diamond.BackgroundTransparency = 1
+			diamond.BorderSizePixel    = 0
+			diamond.Size               = UDim2.new(0, 20, 0, 10)
+			diamond.Position           = UDim2.new(0.5,-10,0,-2)
+			diamond.TextXAlignment     = Enum.TextXAlignment.Center
+			diamond.ZIndex             = 5
+			diamond.Parent             = wrap
 		end
 
 		return API
