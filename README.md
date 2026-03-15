@@ -1,9 +1,57 @@
-Hello everyone,
+# NexusUI v2.6 (Roblox Luau UI Library)
 
-I want to thank all of you who have supported and used my UI library. Your feedback, testing, and support meant a lot and helped the project grow.
+NexusUI is a single-file Roblox UI library focused on fast setup, rich widgets, and resilient runtime behavior.
 
-At this time, the current UI library will be officially shut down and discontinued. It will no longer receive updates or support.
+## What's included
 
-The good news is that this is not the end. I am currently working on a new and improved UI library that will be more stable, better designed, and packed with improvements based on everything learned from this project.
+- Window API with drag, pin/unpin, resize, and minimize
+- Tabs + many built-in controls (toggle, slider, dropdown, multiselect, keybind, color picker, etc.)
+- Notification system with animated entry/exit and queue cap
+- Theme preset support (`Default`, `Ocean`, `Crimson`, `Forest`, `Midnight`)
+- Config save/load helpers (when executor file APIs are available)
 
-Thank you again to everyone who used the library and supported it. Stay tuned — the next version will be coming soon.
+## Install
+
+Copy `NexusUI.lua` into your project, or load it remotely.
+
+## LoaderString demo
+
+Use this pattern when your executor supports `loadstring` and `game:HttpGet`:
+
+```lua
+local Source = game:HttpGet("https://raw.githubusercontent.com/<your-user>/<your-repo>/<branch>/NexusUI.lua")
+local NexusUI = loadstring(Source)()
+
+local Win = NexusUI:CreateWindow({
+    Title = "NexusUI Demo",
+    Subtitle = "LoaderString",
+    Icon = "N",
+    Size = UDim2.new(0, 380, 0, 520)
+})
+
+local Main = Win:AddTab("Main", "✨")
+Main:AddLabel({Text = "Loaded from remote source"})
+
+NexusUI:Notify({
+    Title = "NexusUI",
+    Desc = "LoaderString demo started",
+    Duration = 3,
+    Icon = "✓"
+})
+```
+
+> A complete runnable demo is included in `tests/LoaderStringDemo.lua`.
+
+## Local file loader (alternative)
+
+If your environment does not allow `HttpGet`, you can load from local text:
+
+```lua
+local NexusUI = loadstring(readfile("NexusUI.lua"))()
+```
+
+## Notes
+
+- In restricted environments, `writefile`/`readfile` may be unavailable.
+- If `CoreGui` parenting is blocked, NexusUI falls back to other GUI parenting strategies.
+- Keep window titles unique if you rely on config IDs and registry-based save/load.
