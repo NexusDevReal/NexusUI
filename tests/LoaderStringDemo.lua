@@ -34,6 +34,67 @@ local function loadLibrary(src)
     return lib, nil
 end
 
+local function buildMainTab(NexusUI, Win)
+    local Main = Win:AddTab("Main", "🏠")
+
+    Main:AddLabel({
+        Text = "NexusUI loaded from LoaderString.",
+        Desc = "This is the main demo section.",
+        Icon = "✓",
+    })
+
+    Main:AddToggle({
+        Name = "Enable Feature",
+        Desc = "Basic toggle example",
+        Default = false,
+        Callback = function(v)
+            NexusUI:Notify({
+                Title = "Toggle",
+                Desc = "Enable Feature = " .. tostring(v),
+                Duration = 2,
+                Icon = "⚙",
+            })
+        end,
+    })
+
+    Main:AddButton({
+        Text = "Show Notification",
+        Desc = "Verifies callback + notification path",
+        Callback = function()
+            NexusUI:Notify({
+                Title = "Smoke Test",
+                Desc = "Main tab callback executed",
+                Duration = 2,
+                Icon = "✓",
+            })
+        end,
+    })
+
+    return Main
+end
+
+local function buildConfigTab(Win)
+    local Config = Win:AddTab("Config", "💾")
+
+    Config:AddButton({
+        Text = "Save Config",
+        Desc = "Calls Win:SaveConfig('demo')",
+        Callback = function()
+            Win:SaveConfig("demo")
+        end,
+    })
+
+    Config:AddButton({
+        Text = "Load Config",
+        Desc = "Calls Win:LoadConfig('demo')",
+        Callback = function()
+            Win:LoadConfig("demo")
+        end,
+    })
+
+    return Config
+end
+
 local function runDemo()
     local src, fetchErr = fetchSource(REPO_RAW_URL)
     if not src then
@@ -49,7 +110,7 @@ local function runDemo()
 
     local Win = NexusUI:CreateWindow({
         Title = "NexusUI Loader Test",
-        Subtitle = "tests/LoaderStringDemo.lua",
+        Subtitle = "Main + Config demo",
         Icon = "🧪",
         Size = UDim2.new(0, 390, 0, 520),
     })
@@ -59,20 +120,8 @@ local function runDemo()
         return false
     end
 
-    local Main = Win:AddTab("Smoke", "✅")
-    Main:AddLabel({Text = "LoaderString demo window created"})
-    Main:AddButton({
-        Text = "Notify",
-        Desc = "Verifies callback + notification path",
-        Callback = function()
-            NexusUI:Notify({
-                Title = "Smoke Test",
-                Desc = "Callback executed",
-                Duration = 2,
-                Icon = "✓",
-            })
-        end,
-    })
+    buildMainTab(NexusUI, Win)
+    buildConfigTab(Win)
 
     NexusUI:Notify({
         Title = "Loader Test Ready",

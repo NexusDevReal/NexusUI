@@ -42,6 +42,30 @@ NexusUI:Notify({
 
 > A complete runnable demo is included in `tests/LoaderStringDemo.lua`.
 
+## Main script template
+
+If you want a clean **main part** for your script, use this structure:
+
+```lua
+local Source = game:HttpGet("https://raw.githubusercontent.com/<your-user>/<your-repo>/<branch>/NexusUI.lua")
+local NexusUI = loadstring(Source)()
+
+local Win = NexusUI:CreateWindow({
+    Title = "My Hub",
+    Subtitle = "Main",
+    Icon = "N"
+})
+
+local Main = Win:AddTab("Main", "🏠")
+Main:AddLabel({Text = "Welcome"})
+Main:AddToggle({Name = "Feature", Default = false, Callback = function(v)
+    print("Feature:", v)
+end})
+Main:AddButton({Text = "Notify", Callback = function()
+    NexusUI:Notify({Title = "Main", Desc = "Button clicked", Icon = "✓"})
+end})
+```
+
 ## Local file loader (alternative)
 
 If your environment does not allow `HttpGet`, you can load from local text:
