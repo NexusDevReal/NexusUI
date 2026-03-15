@@ -139,7 +139,7 @@ end
 ## Quick Start
 
 ```lua
-local NexusUI = loadstring(game:HttpGet("YOUR_RAW_URL"))()
+local NexusUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/NexusDevReal/NexusUI/refs/heads/main/NexusUI.lua"))()
 
 local Win = NexusUI:CreateWindow({
     Title    = "My Script",
