@@ -59,6 +59,46 @@ local TweenService     = game:GetService("TweenService")
 local HttpService      = game:GetService("HttpService")
 local LocalPlayer      = Players.LocalPlayer
 
+local function resolvePlayerGui(timeout)
+	local lp = Players.LocalPlayer
+	if not lp then return nil end
+
+	local pg = lp:FindFirstChildOfClass("PlayerGui")
+	if pg then return pg end
+
+	local ok, result = pcall(function()
+		return lp:WaitForChild("PlayerGui", timeout or 5)
+	end)
+	if ok and result then return result end
+
+	return lp.PlayerGui
+end
+
+local function parentScreenGui(screenGui)
+	if not screenGui then return false end
+
+	local okCore = pcall(function()
+		screenGui.Parent = game:GetService("CoreGui")
+	end)
+	if okCore then return true end
+
+	if type(gethui) == "function" then
+		local okHui, hui = pcall(gethui)
+		if okHui and typeof(hui) == "Instance" then
+			screenGui.Parent = hui
+			return true
+		end
+	end
+
+	local pg = resolvePlayerGui(5)
+	if pg then
+		screenGui.Parent = pg
+		return true
+	end
+
+	return false
+end
+
 -- ─────────────────────────────────────────────────────────────
 --  THEME
 -- ─────────────────────────────────────────────────────────────
@@ -106,9 +146,22 @@ local T = {
 -- FIX (v2.5): weak-key table — destroyed GUI objects are not retained by the cache
 local TweenCache = setmetatable({}, {__mode = "k"})   -- [object] = Tween
 
+local function canTween(target)
+	if typeof(target) ~= "Instance" then
+		return false
+	end
+
+	local ok = pcall(function()
+		return target.ClassName
+	end)
+
+	return ok
+end
+
 local function tw(o, p, t, style, dir)
 	-- FIX (v2.6): nil/destroyed guard — never let a missing object crash the tween system
-	if not o or not o.Parent and o.ClassName == nil then return end
+	if not canTween(o) then return end
+	if type(p) ~= "table" or next(p) == nil then return end
 	-- Cancel any in-progress tween on this object first
 	if TweenCache[o] then
 		TweenCache[o]:Cancel()
@@ -624,19 +677,12 @@ local function EnsureNH()
 	sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	sg.DisplayOrder   = 999
 	sg.IgnoreGuiInset = true
-	-- Fix 4: same triple-fallback as CreateWindow
-	local ok = pcall(function() sg.Parent = game:GetService("CoreGui") end)
-	if not ok then
-		local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-		if not pGui then
-			local ok2, result = pcall(function()
-				return LocalPlayer:WaitForChild("PlayerGui", 5)
-			end)
-			pGui = (ok2 and result) or LocalPlayer.PlayerGui
-		end
-		sg.Parent = pGui
+	if parentScreenGui(sg) then
+		InitNH(sg)
+		return
 	end
-	InitNH(sg)
+
+	warn("[NexusUI] Failed to initialize notification ScreenGui (no valid parent).")
 end
 
 function NexusUI:Notify(opt)
@@ -773,22 +819,9 @@ function NexusUI:CreateWindow(opt)
 	sg.DisplayOrder   = 999
 	sg.IgnoreGuiInset = true
 
-	-- Fix 4: triple-fallback parenting — always resolves to somewhere visible
-	-- 1st choice: CoreGui (executor environments)
-	-- 2nd choice: WaitForChild("PlayerGui") — up to 5 s
-	-- 3rd choice: direct .PlayerGui property — guaranteed to exist
-	local parentOk = pcall(function()
-		sg.Parent = game:GetService("CoreGui")
-	end)
-	if not parentOk then
-		local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-		if not pGui then
-			local ok2, result = pcall(function()
-				return LocalPlayer:WaitForChild("PlayerGui", 5)
-			end)
-			pGui = (ok2 and result) or LocalPlayer.PlayerGui
-		end
-		sg.Parent = pGui
+	if not parentScreenGui(sg) then
+		warn("[NexusUI] Failed to parent ScreenGui; window creation aborted.")
+		return nil
 	end
 
 	-- Notification holder
@@ -1096,7 +1129,8 @@ function NexusUI:CreateWindow(opt)
 		end
 		local json = HttpService:JSONEncode(data)
 		local path = "NexusUI_"..wName.."_"..name..".json"
-		local ok = pcall(writefile, path, json)
+		local canWrite = type(writefile) == "function"
+		local ok = canWrite and pcall(writefile, path, json)
 		if ok then
 			self:Notify({Title="Config Saved",Desc=path,Duration=3,Icon="✓",Color=T.Green})
 		else
@@ -1112,12 +1146,22 @@ function NexusUI:CreateWindow(opt)
 			warn("[NexusUI] No registered IDs for window '"..wName.."'"); return
 		end
 		local path = "NexusUI_"..wName.."_"..name..".json"
+		if type(readfile) ~= "function" then
+			self:Notify({Title="Config Not Supported",Desc="readfile unavailable",Duration=3,Icon="!",Color=T.Yellow})
+			return
+		end
 		local ok, json = pcall(readfile, path)
 		if not ok or not json then
 			self:Notify({Title="Config Not Found",Desc=path,Duration=3,Icon="!",Color=T.Red})
 			return
 		end
-		local data = HttpService:JSONDecode(json)
+		local decodeOk, data = pcall(function()
+			return HttpService:JSONDecode(json)
+		end)
+		if not decodeOk or type(data) ~= "table" then
+			self:Notify({Title="Config Invalid",Desc=path,Duration=3,Icon="!",Color=T.Red})
+			return
+		end
 		for id, val in pairs(data) do
 			local e = reg[id]
 			if e then
